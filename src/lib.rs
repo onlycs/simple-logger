@@ -495,19 +495,25 @@ impl Log for SimpleLogger {
             };
 
             let line = if self.line {
-                format!(":{} ", record.line().unwrap_or(0))
+                format!(":{}", record.line().unwrap_or(0))
             } else {
                 "".to_string()
             };
 
             let file = if self.file {
-                format!("{}:", record.file().unwrap_or("?"))
+                record.file().unwrap_or("?").to_string()
+            } else {
+                "".to_string()
+            };
+
+            let linefile = if self.file || self.line {
+                format!("[{file}{line}]")
             } else {
                 "".to_string()
             };
 
             let message = format!(
-                "{timestamp}{level_string} [{file}{target}{line}{thread}] {}",
+                "{timestamp}{level_string} {linefile} [{target}{thread}] {}",
                 record.args()
             );
 
