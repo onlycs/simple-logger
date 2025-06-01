@@ -90,6 +90,12 @@ pub struct SimpleLogger {
     /// This field is only available if the `color` feature is enabled.
     #[cfg(feature = "colors")]
     colors: bool,
+
+    /// Whether to add line information to the log messages.
+    line: bool,
+
+    /// Whether to add file information to the log messages.
+    file: bool,
 }
 
 impl SimpleLogger {
@@ -120,6 +126,9 @@ impl SimpleLogger {
 
             #[cfg(feature = "colors")]
             colors: true,
+
+            line: false,
+            file: false,
         }
     }
 
@@ -337,6 +346,20 @@ impl SimpleLogger {
         self
     }
 
+    /// Control whether line information is included in the log messages.
+    #[must_use = "You must call init() to begin logging"]
+    pub fn with_line(mut self, line: bool) -> SimpleLogger {
+        self.line = line;
+        self
+    }
+
+    /// Control whether file information is included in the log messages.
+    #[must_use = "You must call init() to begin logging"]
+    pub fn with_file(mut self, file: bool) -> SimpleLogger {
+        self.file = file;
+        self
+    }
+
     /// Configure the logger
     pub fn max_level(&self) -> LevelFilter {
         let max_level = self.module_levels.iter().map(|(_name, level)| level).copied().max();
@@ -471,7 +494,22 @@ impl Log for SimpleLogger {
                 ""
             };
 
-            let message = format!("{}{} [{}{}] {}", timestamp, level_string, target, thread, record.args());
+            let line = if self.line {
+                format!(":{} ", record.line().unwrap_or(0))
+            } else {
+                "".to_string()
+            };
+
+            let file = if self.file {
+                format!("{}:", record.file().unwrap_or("?"))
+            } else {
+                "".to_string()
+            };
+
+            let message = format!(
+                "{timestamp}{level_string} [{file}{target}{line}{thread}] {}",
+                record.args()
+            );
 
             #[cfg(not(feature = "stderr"))]
             println!("{}", message);
