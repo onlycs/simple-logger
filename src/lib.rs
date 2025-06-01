@@ -91,11 +91,8 @@ pub struct SimpleLogger {
     #[cfg(feature = "colors")]
     colors: bool,
 
-    /// Whether to add line information to the log messages.
-    line: bool,
-
-    /// Whether to add file information to the log messages.
-    file: bool,
+    /// Whether to add line and file information to the log messages.
+    source_location: bool,
 }
 
 impl SimpleLogger {
@@ -127,8 +124,7 @@ impl SimpleLogger {
             #[cfg(feature = "colors")]
             colors: true,
 
-            line: false,
-            file: false,
+            source_location: false,
         }
     }
 
@@ -348,15 +344,8 @@ impl SimpleLogger {
 
     /// Control whether line information is included in the log messages.
     #[must_use = "You must call init() to begin logging"]
-    pub fn with_line(mut self, line: bool) -> SimpleLogger {
-        self.line = line;
-        self
-    }
-
-    /// Control whether file information is included in the log messages.
-    #[must_use = "You must call init() to begin logging"]
-    pub fn with_file(mut self, file: bool) -> SimpleLogger {
-        self.file = file;
+    pub fn with_source_location(mut self, source_location: bool) -> SimpleLogger {
+        self.source_location = source_location;
         self
     }
 
@@ -494,26 +483,14 @@ impl Log for SimpleLogger {
                 ""
             };
 
-            let line = if self.line {
-                format!(":{}", record.line().unwrap_or(0))
-            } else {
-                "".to_string()
-            };
-
-            let file = if self.file {
-                record.file().unwrap_or("?").to_string()
-            } else {
-                "".to_string()
-            };
-
-            let linefile = if self.file || self.line {
-                format!("[{file}{line}]")
+            let source_info = if self.source_location {
+                format!(" [{}:{}]", record.file().unwrap_or("?"), record.line().unwrap_or(0))
             } else {
                 "".to_string()
             };
 
             let message = format!(
-                "{timestamp}{level_string} {linefile} [{target}{thread}] {}",
+                "{timestamp}{level_string}{source_info} [{target}{thread}] {}",
                 record.args()
             );
 
